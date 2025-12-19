@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use super::{
     CacheAwareConfig, CacheAwarePolicy, LoadBalancingPolicy, PowerOfTwoPolicy, RandomPolicy,
-    RoundRobinPolicy,
+    RoundRobinPolicy, TokenPreciseMatchPolicy, TokenPreciseMatchConfig
 };
 use crate::config::PolicyConfig;
 
@@ -37,7 +37,21 @@ impl PolicyFactory {
                     sync_interval_secs: *sync_interval_secs,
                 };
                 Arc::new(CacheAwarePolicy::with_config(config))
-            }
+            },
+            PolicyConfig::TokenPreciseMatch {  
+                balance_abs_threshold,  
+                balance_rel_threshold,  
+                nexus_endpoint,  
+                request_timeout_secs,  
+            } => {  
+                let config = TokenPreciseMatchConfig {  
+                    balance_abs_threshold: *balance_abs_threshold,  
+                    balance_rel_threshold: *balance_rel_threshold,  
+                    nexus_endpoint: nexus_endpoint.clone(),  
+                    request_timeout_secs: *request_timeout_secs,  
+                };  
+                Arc::new(TokenPreciseMatchPolicy::with_config(config))  
+            }  
         }
     }
 
@@ -48,6 +62,7 @@ impl PolicyFactory {
             "round_robin" | "roundrobin" => Some(Arc::new(RoundRobinPolicy::new())),
             "power_of_two" | "poweroftwo" => Some(Arc::new(PowerOfTwoPolicy::new())),
             "cache_aware" | "cacheaware" => Some(Arc::new(CacheAwarePolicy::new())),
+            "token_precise_match" | "tokenprecisematch" => Some(Arc::new(TokenPreciseMatchPolicy::new())),
             _ => None,
         }
     }

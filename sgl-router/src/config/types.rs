@@ -317,6 +317,14 @@ pub enum PolicyConfig {
         /// Interval for load monitoring (seconds)
         load_check_interval_secs: u64,
     },
+
+    #[serde(rename = "token_precise_match")]
+    TokenPreciseMatch {  
+        balance_abs_threshold: usize,  
+        balance_rel_threshold: f32,  
+        nexus_endpoint: String,  
+        request_timeout_secs: u64,  
+    },
 }
 
 impl PolicyConfig {
@@ -326,6 +334,7 @@ impl PolicyConfig {
             PolicyConfig::RoundRobin => "round_robin",
             PolicyConfig::CacheAware { .. } => "cache_aware",
             PolicyConfig::PowerOfTwo { .. } => "power_of_two",
+            PolicyConfig::TokenPreciseMatch { .. } => "token_precise_match",
         }
     }
 }

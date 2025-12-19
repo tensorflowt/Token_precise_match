@@ -13,6 +13,7 @@ mod power_of_two;
 mod random;
 mod registry;
 mod round_robin;
+mod token_precise_match; 
 
 pub use cache_aware::CacheAwarePolicy;
 pub use factory::PolicyFactory;
@@ -20,6 +21,7 @@ pub use power_of_two::PowerOfTwoPolicy;
 pub use random::RandomPolicy;
 pub use registry::PolicyRegistry;
 pub use round_robin::RoundRobinPolicy;
+pub use token_precise_match::TokenPreciseMatchPolicy;
 
 /// Core trait for load balancing policies
 ///
@@ -36,6 +38,17 @@ pub trait LoadBalancingPolicy: Send + Sync + Debug {
         request_text: Option<&str>,
     ) -> Option<usize>;
 
+    /// Select a worker with token IDs for token-aware policies  
+    fn select_worker_with_tokens(  
+        &self,  
+        workers: &[Arc<dyn Worker>],  
+        request_text: Option<&str>,  
+        token_ids: &[u32],  
+    ) -> Option<usize> {  
+        // Default implementation falls back to regular selection  
+        self.select_worker(workers, request_text)  
+    }  
+
     /// Select a pair of workers (prefill and decode) for PD routing
     ///
     /// Returns indices of (prefill_worker, decode_worker) from their respective arrays.
@@ -50,6 +63,18 @@ pub trait LoadBalancingPolicy: Send + Sync + Debug {
         let prefill_idx = self.select_worker(prefill_workers, request_text)?;
         let decode_idx = self.select_worker(decode_workers, request_text)?;
         Some((prefill_idx, decode_idx))
+    }
+
+    /// Select a pair of workers with token IDs for token-aware PD routing  
+    fn select_worker_pair_with_tokens(  
+        &self,  
+        prefill_workers: &[Arc<dyn Worker>],  
+        decode_workers: &[Arc<dyn Worker>],  
+        request_text: Option<&str>,  
+        token_ids: &[u32],  
+    ) -> Option<(usize, usize)> {  
+        // Default implementation falls back to regular pair selection  
+        self.select_worker_pair(prefill_workers, decode_workers, request_text)  
     }
 
     /// Update policy state after request completion

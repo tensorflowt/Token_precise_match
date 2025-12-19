@@ -131,6 +131,23 @@ impl RouterConfigBuilder {
         self
     }
 
+    /// Set token precise match policy
+    pub fn token_precise_match_policy(  
+        mut self,  
+        balance_abs_threshold: usize,  
+        balance_rel_threshold: f32,  
+        nexus_endpoint: String,  
+        request_timeout_secs: u64,  
+    ) -> Self {  
+        self.config.policy = PolicyConfig::TokenPreciseMatch {  
+            balance_abs_threshold,  
+            balance_rel_threshold,  
+            nexus_endpoint,  
+            request_timeout_secs,  
+        };  
+        self  
+    }  
+
     // ==================== Connection Settings ====================
 
     /// Set connection mode

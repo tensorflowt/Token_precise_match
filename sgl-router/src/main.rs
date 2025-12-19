@@ -321,6 +321,9 @@ struct CliArgs {
     
     #[arg(long, default_value = "600")]  
     sync_interval_secs: u64,
+
+    #[arg(long)]  
+    nexus_endpoint: Option<String>,
 }
 
 enum OracleConnectSource {
@@ -365,6 +368,12 @@ impl CliArgs {
             },
             "power_of_two" => PolicyConfig::PowerOfTwo {
                 load_check_interval_secs: 5,
+            },
+             "token_precise_match" => PolicyConfig::TokenPreciseMatch {  
+                balance_abs_threshold: self.balance_abs_threshold,  
+                balance_rel_threshold: self.balance_rel_threshold,  
+                nexus_endpoint: self.nexus_endpoint.clone().unwrap_or_else(|| "http://localhost:8080".to_string()),  
+                request_timeout_secs: self.request_timeout_secs,  
             },
             _ => PolicyConfig::RoundRobin,
         }

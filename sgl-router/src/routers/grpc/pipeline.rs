@@ -271,9 +271,11 @@ impl PipelineStage for WorkerSelectionStage {
             .ok_or_else(|| utils::internal_error_static("Preparation stage not completed"))?;
 
         let text = prep.original_text.as_deref();
+        let token_ids = prep.token_ids.as_slice(); // 获取token_ids
 
         let workers = match self.mode {
             WorkerSelectionMode::Regular => {
+                // Regular模式：不传递token_ids，即使对于TokenPreciseMatchPolicy
                 match self.select_single_worker(ctx.input.model_id.as_deref(), text) {
                     Some(w) => WorkerSelection::Single { worker: w },
                     None => {
@@ -285,7 +287,8 @@ impl PipelineStage for WorkerSelectionStage {
                 }
             }
             WorkerSelectionMode::PrefillDecode => {
-                match self.select_pd_pair(ctx.input.model_id.as_deref(), text) {
+                // PD模式：传递token_ids给TokenPreciseMatchPolicy
+                match self.select_pd_pair(ctx.input.model_id.as_deref(), text, token_ids) {
                     Some((prefill, decode)) => WorkerSelection::Dual { prefill, decode },
                     None => {
                         return Err(utils::service_unavailable_error(format!(
@@ -337,7 +340,7 @@ impl WorkerSelectionStage {
             None => self.policy_registry.get_default_policy(),
         };
 
-        // Select worker using the policy
+        // Regular模式：始终使用标准方法，不传递token_ids  
         let idx = policy.select_worker(&available, text)?;
         Some(available[idx].clone())
     }
@@ -346,6 +349,7 @@ impl WorkerSelectionStage {
         &self,
         model_id: Option<&str>,
         text: Option<&str>,
+        token_ids: &[u32],
     ) -> Option<(Arc<dyn Worker>, Arc<dyn Worker>)> {
         let all_workers = self.worker_registry.get_workers_filtered(
             model_id,
@@ -384,13 +388,24 @@ impl WorkerSelectionStage {
             None => self.policy_registry.get_default_policy(),
         };
 
-        let prefill_idx = policy.select_worker(&available_prefill, text)?;
-        let decode_idx = policy.select_worker(&available_decode, text)?;
-
-        Some((
-            available_prefill[prefill_idx].clone(),
-            available_decode[decode_idx].clone(),
-        ))
+        // PD模式：尝试向下转型为TokenPreciseMatchPolicy以使用token_ids  
+        if let Some(token_policy) = policy.as_any().downcast_ref::<TokenPreciseMatchPolicy>() {  
+            // 使用token_ids的专用方法进行精确匹配  
+            let (prefill_idx, decode_idx) = token_policy  
+                .select_worker_pair_with_tokens(&available_prefill, &available_decode, text, token_ids)?;  
+            Some((  
+                available_prefill[prefill_idx].clone(),  
+                available_decode[decode_idx].clone(),  
+            ))  
+        } else {  
+            // 其他策略：使用标准方法
+            let prefill_idx = policy.select_worker(&available_prefill, text)?;
+            let decode_idx = policy.select_worker(&available_decode, text)?;
+            Some((
+                available_prefill[prefill_idx].clone(),
+                available_decode[decode_idx].clone(),
+            ))
+        }
     }
 }
 

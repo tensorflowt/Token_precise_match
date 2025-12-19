@@ -12,8 +12,8 @@ use tracing::{debug, info, warn};
 /// All subsequent workers of the same model use the established policy.
 /// When the last worker of a model is removed, the policy mapping is cleaned up.
 use super::{
-    CacheAwareConfig, CacheAwarePolicy, LoadBalancingPolicy, PowerOfTwoPolicy, RandomPolicy,
-    RoundRobinPolicy,
+    CacheAwareConfig, CacheAwarePolicy, LoadBalancingPolicy, PowerOfTwoPolicy, RandomPolicy, 
+    RoundRobinPolicy, TokenPreciseMatchPolicy, TokenPreciseMatchConfig
 };
 use crate::{config::types::PolicyConfig, core::Worker};
 
@@ -176,6 +176,7 @@ impl PolicyRegistry {
             "random" => Arc::new(RandomPolicy::new()),
             "cache_aware" => Arc::new(CacheAwarePolicy::new()),
             "power_of_two" => Arc::new(PowerOfTwoPolicy::new()),
+            "token_precise_match" => Arc::new(TokenPreciseMatchPolicy::new()),
             _ => {
                 warn!("Unknown policy type '{}', using default", policy_type);
                 Arc::clone(&self.default_policy)
@@ -209,6 +210,20 @@ impl PolicyRegistry {
                 Arc::new(CacheAwarePolicy::with_config(cache_config))
             }
             PolicyConfig::PowerOfTwo { .. } => Arc::new(PowerOfTwoPolicy::new()),
+            PolicyConfig::TokenPreciseMatch {  
+                balance_abs_threshold,  
+                balance_rel_threshold,  
+                nexus_endpoint,  
+                request_timeout_secs,  
+            } => {  
+                let config = TokenPreciseMatchConfig {  
+                    balance_abs_threshold: *balance_abs_threshold,  
+                    balance_rel_threshold: *balance_rel_threshold,  
+                    nexus_endpoint: nexus_endpoint.clone(),  
+                    request_timeout_secs: *request_timeout_secs,  
+                };  
+                Arc::new(TokenPreciseMatchPolicy::with_config(config))  
+            }  
         }
     }
 

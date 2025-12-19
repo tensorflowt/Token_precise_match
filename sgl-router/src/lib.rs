@@ -28,6 +28,7 @@ pub enum PolicyType {
     RoundRobin,
     CacheAware,
     PowerOfTwo,
+    TokenPreciseMatch,
 }
 
 #[pyclass(eq)]
@@ -242,6 +243,12 @@ impl Router {
                 },
                 PolicyType::PowerOfTwo => ConfigPolicyConfig::PowerOfTwo {
                     load_check_interval_secs: 5,
+                },
+                PolicyType::TokenPreciseMatch => ConfigPolicyConfig::TokenPreciseMatch {  
+                    balance_abs_threshold: self.balance_abs_threshold,  
+                    balance_rel_threshold: self.balance_rel_threshold,  
+                    nexus_endpoint: self.nexus_endpoint.clone().unwrap_or_else(|| "http://localhost:8080".to_string()),  
+                    request_timeout_secs: self.request_timeout_secs,  
                 },
             }
         };

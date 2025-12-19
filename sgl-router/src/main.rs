@@ -112,7 +112,7 @@ struct CliArgs {
     #[arg(long, num_args = 0..)]
     worker_urls: Vec<String>,
 
-    #[arg(long, default_value = "cache_aware", value_parser = ["random", "round_robin", "cache_aware", "power_of_two"])]
+    #[arg(long, default_value = "cache_aware", value_parser = ["random", "round_robin", "cache_aware", "power_of_two", "token_precise_match"])]
     policy: String,
 
     #[arg(long, default_value_t = false)]
@@ -121,7 +121,7 @@ struct CliArgs {
     #[arg(long, action = ArgAction::Append)]
     decode: Vec<String>,
 
-    #[arg(long, value_parser = ["random", "round_robin", "cache_aware", "power_of_two"])]
+    #[arg(long, value_parser = ["random", "round_robin", "cache_aware", "power_of_two", "token_precise_match"])]
     prefill_policy: Option<String>,
 
     #[arg(long, value_parser = ["random", "round_robin", "cache_aware", "power_of_two"])]

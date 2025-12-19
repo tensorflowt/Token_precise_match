@@ -22,7 +22,7 @@ use super::{context::*, processing, responses::BackgroundTaskInfo, streaming, ut
 use crate::{
     core::{ConnectionMode, Worker, WorkerRegistry, WorkerType},
     grpc_client::proto,
-    policies::PolicyRegistry,
+    policies::{PolicyRegistry, TokenPreciseMatchPolicy, LoadBalancingPolicy},
     protocols::{
         chat::{ChatCompletionRequest, ChatCompletionResponse},
         common::InputIds,

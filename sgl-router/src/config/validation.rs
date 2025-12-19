@@ -246,6 +246,50 @@ impl ConfigValidator {
                     });
                 }
             }
+            PolicyConfig::TokenPreciseMatch {   
+                balance_abs_threshold,  
+                balance_rel_threshold,  
+                nexus_endpoint,  
+                request_timeout_secs  
+            } => {  
+                // 验证绝对阈值  
+                if *balance_abs_threshold == 0 {  
+                    return Err(ConfigError::InvalidValue {  
+                        field: "balance_abs_threshold".to_string(),  
+                        value: balance_abs_threshold.to_string(),  
+                        reason: "Must be > 0".to_string(),  
+                    });  
+                }  
+                
+                // 验证相对阈值  
+                if *balance_rel_threshold < 1.0 {  
+                    return Err(ConfigError::InvalidValue {  
+                        field: "balance_rel_threshold".to_string(),  
+                        value: balance_rel_threshold.to_string(),  
+                        reason: "Must be >= 1.0".to_string(),  
+                    });  
+                }  
+                
+                // 验证请求超时  
+                if *request_timeout_secs == 0 {  
+                    return Err(ConfigError::InvalidValue {  
+                        field: "request_timeout_secs".to_string(),  
+                        value: request_timeout_secs.to_string(),  
+                        reason: "Must be > 0".to_string(),  
+                    });  
+                }  
+                
+                // 验证 nexus endpoint（如果提供）  
+                if let endpoint = nexus_endpoint {  
+                    if endpoint.is_empty() {  
+                        return Err(ConfigError::InvalidValue {  
+                            field: "nexus_endpoint".to_string(),  
+                            value: endpoint.clone(),  
+                            reason: "Cannot be empty".to_string(),  
+                        });  
+                    }  
+                }  
+            }
         }
         Ok(())
     }

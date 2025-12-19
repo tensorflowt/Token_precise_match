@@ -21,7 +21,9 @@ pub use power_of_two::PowerOfTwoPolicy;
 pub use random::RandomPolicy;
 pub use registry::PolicyRegistry;
 pub use round_robin::RoundRobinPolicy;
-pub use token_precise_match::TokenPreciseMatchPolicy;
+pub use token_precise_match::{TokenPreciseMatchPolicy, TokenPreciseMatchConfig};
+use crate::policies::TokenPreciseMatchPolicy;
+
 
 /// Core trait for load balancing policies
 ///

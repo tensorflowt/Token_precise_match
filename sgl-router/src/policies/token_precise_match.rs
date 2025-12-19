@@ -47,7 +47,8 @@ impl Default for TokenPreciseMatchConfig {
 #[derive(Debug, Clone)]  
 pub struct TokenPreciseMatchPolicy {  
     config: TokenPreciseMatchConfig,  
-    http_client: Client,  
+    http_client: Client,
+    runtime: std::sync::Arc<tokio::runtime::Runtime>,  
 }  
   
 #[derive(Serialize)]  
@@ -117,7 +118,7 @@ impl TokenPreciseMatchPolicy {
     /// Find worker index by worker ID from the available workers  
     fn find_worker_by_id(&self, workers: &[Arc<dyn Worker>], worker_id: &str) -> Option<usize> {  
         workers.iter().position(|w| {  
-            w.metadata().id == worker_id ||   
+            w.url() == worker_id ||   
             w.metadata().url.contains(worker_id) ||  
             w.metadata().url.ends_with(worker_id)  
         })  

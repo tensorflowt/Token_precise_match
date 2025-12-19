@@ -247,7 +247,7 @@ impl Router {
                 PolicyType::TokenPreciseMatch => ConfigPolicyConfig::TokenPreciseMatch {  
                     balance_abs_threshold: self.balance_abs_threshold,  
                     balance_rel_threshold: self.balance_rel_threshold,  
-                    nexus_endpoint: self.nexus_endpoint.clone().unwrap_or_else(|| "http://localhost:8080".to_string()),  
+                    nexus_endpoint: "http://localhost:8080".to_string(), 
                     request_timeout_secs: self.request_timeout_secs,  
                 },
             }

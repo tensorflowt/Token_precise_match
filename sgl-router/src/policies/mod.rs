@@ -68,7 +68,8 @@ pub trait LoadBalancingPolicy: Send + Sync + Debug {
         Some((prefill_idx, decode_idx))
     }
 
-    /// Select a pair of workers with token IDs for token-aware PD routing  
+    /// Select a pair of workers with token IDs for token-aware PD routing 
+    /// LoadBalancingPolicy trait 的默认实现 
     fn select_worker_pair_with_tokens(  
         &self,  
         prefill_workers: &[Arc<dyn Worker>],  
@@ -76,7 +77,6 @@ pub trait LoadBalancingPolicy: Send + Sync + Debug {
         request_text: Option<&str>,  
         token_ids: &[u32],  
     ) -> Option<(usize, usize)> {  
-        info!("use select_worker_pair_with_tokens from mod.rs");
         // Default implementation falls back to regular pair selection  
         self.select_worker_pair(prefill_workers, decode_workers, request_text)  
     }

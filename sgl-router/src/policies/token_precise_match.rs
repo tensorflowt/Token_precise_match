@@ -77,19 +77,11 @@ impl TokenPreciseMatchPolicy {
     }  
   
     fn get_best_instance_from_nexus(&self, token_ids: &[u32]) -> Result<Vec<String>, String> {
-        info!("token_ids.to_vec(): {:?}", token_ids.to_vec());
-        info!("Using mock Nexus response for testing");  
-        // 临时自测
-        // TODO：nexus接口支持后再测
-        //return Ok(vec!["grpc://localhost:8000".to_string()]); 
-
         let request = NexusRequest {  
             token_ids: token_ids.to_vec(),  
         };  
   
-        let url = format!("{}/v1/Nexus/get_best_instance", self.config.nexus_endpoint);  
-          
-        debug!("Calling Nexus API at {} with {} tokens", url, token_ids.len());  
+        let url = format!("{}/v1/Nexus/get_best_instance", self.config.nexus_endpoint);    
   
         // Use block_on to call async function from sync context
         let response = tokio::task::block_in_place(|| {  
@@ -112,8 +104,6 @@ impl TokenPreciseMatchPolicy {
             })  
         }).map_err(|e| format!("Failed to parse Nexus response: {}", e))?; 
   
-        info!("Nexus returned {} worker candidates", nexus_response.worker_ids.len());  
-        info!("worker_ids: {:?}", nexus_response.worker_ids);
         Ok(nexus_response.worker_ids)  
     }  
 
@@ -145,17 +135,6 @@ impl LoadBalancingPolicy for TokenPreciseMatchPolicy {
         _request_text: Option<&str>,  
         token_ids: &[u32],  
     ) -> Option<usize> {
-        // 打印请求信息 
-        info!("request_text: {:?}", _request_text);
-        info!(" token_ids.to_vec(): {:?}", token_ids.to_vec());
-        // 打印当前所有可用worker的ID信息  
-        info!("Available workers in router:");  
-        ///   [0] URL: grpc://localhost:8000, Metadata URL: grpc://localhost:8000
-        for (idx, worker) in workers.iter().enumerate() {  
-            info!("  [{}] URL: {}, Metadata URL: {}",   
-                idx, worker.url(), worker.metadata().url);  
-        } 
-
         let healthy_indices = get_healthy_worker_indices(workers);  
   
         if healthy_indices.is_empty() {  
@@ -187,14 +166,8 @@ impl LoadBalancingPolicy for TokenPreciseMatchPolicy {
             return Some(min_load_idx);  
         }  
   
-        info!("Strategy: balanced, using token-based matching");
         // Use token precise matching when balanced  
         if !token_ids.is_empty() {  
-            info!("Using token-based matching with {} tokens", token_ids.len());  
-            warn!("DEBUG: Returning mock worker index 0");  
-            // workers[0].increment_processed();
-            // return Some(0);
-
             // Call Nexus API to get best worker  
             match self.get_best_instance_from_nexus(token_ids) {  
                 Ok(worker_ids) => {  
@@ -210,7 +183,7 @@ impl LoadBalancingPolicy for TokenPreciseMatchPolicy {
                     }  
                       
                     // If no recommended worker is available, fall back to load balancing  
-                    info!("No Nexus-recommended workers available, falling back to load balancing");  
+                    warn!("No Nexus-recommended workers available, falling back to load balancing.");  
                     let min_load_idx = healthy_indices  
                         .iter()  
                         .min_by_key(|&&idx| workers[idx].load())  
@@ -231,7 +204,7 @@ impl LoadBalancingPolicy for TokenPreciseMatchPolicy {
             }    
         } else {  
             // No tokens available, use load balancing  
-            info!("No tokens available, using load balancing");  
+            warn!("Decode worker no tokens available, using load balancing!");  
             let min_load_idx = healthy_indices  
                 .iter()  
                 .min_by_key(|&&idx| workers[idx].load())  
@@ -257,13 +230,11 @@ impl LoadBalancingPolicy for TokenPreciseMatchPolicy {
         _request_text: Option<&str>,  
         token_ids: &[u32],  
     ) -> Option<(usize, usize)> {  
-        info!("use select_worker_pair_with_tokens from token_precise_match.rs");
         // For prefill workers, use token precise matching  
         let prefill_idx = self.select_worker_with_tokens(prefill_workers, _request_text, token_ids)?;  
   
         // For decode workers, always use load balancing (no tokens)  
         let decode_idx = self.select_worker_with_tokens(decode_workers, _request_text, &[])?;
-        info!("prefill_idx: {}, decode_idx: {}", prefill_idx, decode_idx);
         Some((prefill_idx, decode_idx))  
 
     }

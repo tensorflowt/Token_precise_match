@@ -34,6 +34,7 @@ class RouterArgs:
     eviction_interval_secs: int = 120
     enable_cache_sync: bool = False  # 新增: 默认关闭缓存同步
     sync_interval_secs: int = 600 # 新增同步间隔参数
+    nexus_endpoint: Optional[str] = None # 新增nexus_endpoint参数
     max_tree_size: int = 2**26
     max_payload_size: int = 512 * 1024 * 1024  # 512MB default for large batches
     dp_aware: bool = False
@@ -589,6 +590,12 @@ class RouterArgs:
             action="store_true",  
             default=RouterArgs.enable_cache_sync,  
             help="Enable cache tree synchronization from prefill workers",  
+        )
+        parser.add_argument(  
+            f"--{prefix}nexus-endpoint",  
+            type=str,  
+            default=None,  
+            help="Nexus endpoint for token_precise_match policy"  
         )
 
     @classmethod

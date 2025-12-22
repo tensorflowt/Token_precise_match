@@ -22,8 +22,9 @@ pub use random::RandomPolicy;
 pub use registry::PolicyRegistry;
 pub use round_robin::RoundRobinPolicy;
 pub use token_precise_match::{TokenPreciseMatchPolicy, TokenPreciseMatchConfig};
-use crate::policies::TokenPreciseMatchPolicy;
+//use crate::policies::TokenPreciseMatchPolicy;
 
+use tracing::{debug, error, warn, info};
 
 /// Core trait for load balancing policies
 ///
@@ -75,6 +76,7 @@ pub trait LoadBalancingPolicy: Send + Sync + Debug {
         request_text: Option<&str>,  
         token_ids: &[u32],  
     ) -> Option<(usize, usize)> {  
+        info!("use select_worker_pair_with_tokens from mod.rs");
         // Default implementation falls back to regular pair selection  
         self.select_worker_pair(prefill_workers, decode_workers, request_text)  
     }

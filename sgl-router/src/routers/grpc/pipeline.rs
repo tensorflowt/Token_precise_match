@@ -391,9 +391,11 @@ impl WorkerSelectionStage {
 
         // PD模式：尝试向下转型为TokenPreciseMatchPolicy以使用token_ids  
         if let Some(token_policy) = policy.as_any().downcast_ref::<TokenPreciseMatchPolicy>() {  
-            // 使用token_ids的专用方法进行精确匹配  
+            // 使用token_ids的专用方法进行精确匹配 
+            info!("pipelines support TokenPreciseMatchPolicy");
             let (prefill_idx, decode_idx) = token_policy  
                 .select_worker_pair_with_tokens(&available_prefill, &available_decode, text, token_ids)?;  
+            info!("prefill_idx: {}, decode_idx: {}", prefill_idx, decode_idx);
             Some((  
                 available_prefill[prefill_idx].clone(),  
                 available_decode[decode_idx].clone(),  
@@ -420,6 +422,7 @@ pub struct ClientAcquisitionStage;
 #[async_trait]
 impl PipelineStage for ClientAcquisitionStage {
     async fn execute(&self, ctx: &mut RequestContext) -> Result<Option<Response>, Response> {
+        info!("start ClientAcquisitionStage");
         let workers = ctx
             .state
             .workers
@@ -440,7 +443,7 @@ impl PipelineStage for ClientAcquisitionStage {
                 }
             }
         };
-
+        info!("finish ClientAcquisitionStage");
         ctx.state.clients = Some(clients);
         Ok(None)
     }
@@ -468,6 +471,7 @@ impl RequestBuildingStage {
 #[async_trait]
 impl PipelineStage for RequestBuildingStage {
     async fn execute(&self, ctx: &mut RequestContext) -> Result<Option<Response>, Response> {
+        info!("start RequestBuildingStage");
         let prep = ctx
             .state
             .preparation
@@ -531,7 +535,7 @@ impl PipelineStage for RequestBuildingStage {
                 self.inject_bootstrap_metadata(&mut proto_request, prefill);
             }
         }
-
+        info!("finish RequestBuildingStage");
         ctx.state.proto_request = Some(proto_request);
         Ok(None)
     }
@@ -580,6 +584,7 @@ pub struct DispatchMetadataStage;
 #[async_trait]
 impl PipelineStage for DispatchMetadataStage {
     async fn execute(&self, ctx: &mut RequestContext) -> Result<Option<Response>, Response> {
+        info!("start DispatchMetadataStage");
         let proto_request = ctx
             .state
             .proto_request
@@ -614,7 +619,7 @@ impl PipelineStage for DispatchMetadataStage {
             .duration_since(UNIX_EPOCH)
             .unwrap_or_default()
             .as_secs();
-
+        
         ctx.state.dispatch = Some(DispatchMetadata {
             request_id,
             model,
@@ -622,6 +627,8 @@ impl PipelineStage for DispatchMetadataStage {
             weight_version: Some(weight_version),
             is_streaming: ctx.is_streaming(),
         });
+
+        info!("finish DispatchMetadataStage");
 
         Ok(None)
     }
@@ -656,6 +663,7 @@ impl RequestExecutionStage {
 #[async_trait]
 impl PipelineStage for RequestExecutionStage {
     async fn execute(&self, ctx: &mut RequestContext) -> Result<Option<Response>, Response> {
+        info!("start RequestExecutionStage");
         let proto_request = ctx
             .state
             .proto_request
@@ -677,6 +685,7 @@ impl PipelineStage for RequestExecutionStage {
 
         // Store result in context for ResponseProcessingStage
         ctx.state.response.execution_result = Some(result);
+        info!("finish RequestExecutionStage");
         Ok(None)
     }
 
@@ -776,11 +785,13 @@ impl ResponseProcessingStage {
 #[async_trait]
 impl PipelineStage for ResponseProcessingStage {
     async fn execute(&self, ctx: &mut RequestContext) -> Result<Option<Response>, Response> {
+        info!("start ResponseProcessingStage");
         // Delegate to request-type specific processing
         match &ctx.input.request_type {
             RequestType::Chat(_) => return self.process_chat_response(ctx).await,
             RequestType::Generate(_) => return self.process_generate_response(ctx).await,
         }
+        info!("finish ResponseProcessingStage");
     }
 
     fn name(&self) -> &'static str {

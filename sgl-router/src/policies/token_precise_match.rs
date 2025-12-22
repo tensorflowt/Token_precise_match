@@ -81,7 +81,7 @@ impl TokenPreciseMatchPolicy {
         info!("Using mock Nexus response for testing");  
         // 临时自测
         // TODO：nexus接口支持后再测
-        return Ok(vec!["grpc://localhost:8000".to_string()]); 
+        //return Ok(vec!["grpc://localhost:8000".to_string()]); 
 
         let request = NexusRequest {  
             token_ids: token_ids.to_vec(),  
@@ -113,6 +113,7 @@ impl TokenPreciseMatchPolicy {
         }).map_err(|e| format!("Failed to parse Nexus response: {}", e))?; 
   
         info!("Nexus returned {} worker candidates", nexus_response.worker_ids.len());  
+        info!("worker_ids: {:?}", nexus_response.worker_ids);
         Ok(nexus_response.worker_ids)  
     }  
 
@@ -191,46 +192,46 @@ impl LoadBalancingPolicy for TokenPreciseMatchPolicy {
         if !token_ids.is_empty() {  
             info!("Using token-based matching with {} tokens", token_ids.len());  
             warn!("DEBUG: Returning mock worker index 0");  
-            workers[0].increment_processed();
-            return Some(0);
+            // workers[0].increment_processed();
+            // return Some(0);
 
             // Call Nexus API to get best worker  
-            // match self.get_best_instance_from_nexus(token_ids) {  
-            //     Ok(worker_ids) => {  
-            //         // Try to find the first available worker from Nexus recommendations  
-            //         for worker_id in worker_ids {  
-            //             if let Some(idx) = self.find_worker_by_id(workers, &worker_id) {  
-            //                 if healthy_indices.contains(&idx) {  
-            //                     debug!("Selected worker {} based on Nexus recommendation", worker_id);  
-            //                     workers[idx].increment_processed();  
-            //                     return Some(idx);  
-            //                 }  
-            //             }  
-            //         }  
+            match self.get_best_instance_from_nexus(token_ids) {  
+                Ok(worker_ids) => {  
+                    // Try to find the first available worker from Nexus recommendations  
+                    for worker_id in worker_ids {  
+                        if let Some(idx) = self.find_worker_by_id(workers, &worker_id) {  
+                            if healthy_indices.contains(&idx) {  
+                                info!("Selected worker {} based on Nexus recommendation", worker_id);  
+                                workers[idx].increment_processed();  
+                                return Some(idx);  
+                            }  
+                        }  
+                    }  
                       
-            //         // If no recommended worker is available, fall back to load balancing  
-            //         warn!("No Nexus-recommended workers available, falling back to load balancing");  
-            //         let min_load_idx = healthy_indices  
-            //             .iter()  
-            //             .min_by_key(|&&idx| workers[idx].load())  
-            //             .copied()?;  
-            //         workers[min_load_idx].increment_processed();  
-            //         return Some(min_load_idx);  
-            //     }  
-            //     Err(e) => {  
-            //         error!("Failed to get worker from Nexus: {}, falling back to load balancing", e);  
-            //         // Fall back to load balancing on error  
-            //         let min_load_idx = healthy_indices  
-            //             .iter()  
-            //             .min_by_key(|&&idx| workers[idx].load())  
-            //             .copied()?;  
-            //         workers[min_load_idx].increment_processed();  
-            //         return Some(min_load_idx);  
-            //     }  
-            // }    
+                    // If no recommended worker is available, fall back to load balancing  
+                    info!("No Nexus-recommended workers available, falling back to load balancing");  
+                    let min_load_idx = healthy_indices  
+                        .iter()  
+                        .min_by_key(|&&idx| workers[idx].load())  
+                        .copied()?;  
+                    workers[min_load_idx].increment_processed();  
+                    return Some(min_load_idx);  
+                }  
+                Err(e) => {  
+                    error!("Failed to get worker from Nexus: {}, falling back to load balancing", e);  
+                    // Fall back to load balancing on error  
+                    let min_load_idx = healthy_indices  
+                        .iter()  
+                        .min_by_key(|&&idx| workers[idx].load())  
+                        .copied()?;  
+                    workers[min_load_idx].increment_processed();  
+                    return Some(min_load_idx);  
+                }  
+            }    
         } else {  
             // No tokens available, use load balancing  
-            debug!("No tokens available, using load balancing");  
+            info!("No tokens available, using load balancing");  
             let min_load_idx = healthy_indices  
                 .iter()  
                 .min_by_key(|&&idx| workers[idx].load())  
@@ -256,11 +257,13 @@ impl LoadBalancingPolicy for TokenPreciseMatchPolicy {
         _request_text: Option<&str>,  
         token_ids: &[u32],  
     ) -> Option<(usize, usize)> {  
+        info!("use select_worker_pair_with_tokens from token_precise_match.rs");
         // For prefill workers, use token precise matching  
         let prefill_idx = self.select_worker_with_tokens(prefill_workers, _request_text, token_ids)?;  
   
         // For decode workers, always use load balancing (no tokens)  
-        let decode_idx = self.select_worker_with_tokens(decode_workers, _request_text, &[])?;  
+        let decode_idx = self.select_worker_with_tokens(decode_workers, _request_text, &[])?;
+        info!("prefill_idx: {}, decode_idx: {}", prefill_idx, decode_idx);
         Some((prefill_idx, decode_idx))  
 
     }

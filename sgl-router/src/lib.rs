@@ -210,6 +210,7 @@ struct Router {
     oracle_config: Option<PyOracleConfig>,
     enable_cache_sync: bool,  
     sync_interval_secs: u64,
+    nexus_endpoint: Option<String>, 
 }
 
 impl Router {
@@ -247,7 +248,7 @@ impl Router {
                 PolicyType::TokenPreciseMatch => ConfigPolicyConfig::TokenPreciseMatch {  
                     balance_abs_threshold: self.balance_abs_threshold,  
                     balance_rel_threshold: self.balance_rel_threshold,  
-                    nexus_endpoint: "http://localhost:8080".to_string(), 
+                    nexus_endpoint: self.nexus_endpoint.clone().unwrap_or_else(|| "http://localhost:8080".to_string()), 
                     request_timeout_secs: self.request_timeout_secs,  
                 },
             }
@@ -448,6 +449,7 @@ impl Router {
         oracle_config = None,
         enable_cache_sync = false,
         sync_interval_secs = 600,
+        nexus_endpoint = None
     ))]
     #[allow(clippy::too_many_arguments)]
     fn new(
@@ -519,6 +521,7 @@ impl Router {
         oracle_config: Option<PyOracleConfig>,
         enable_cache_sync: bool, 
         sync_interval_secs: u64,
+        nexus_endpoint: Option<String>, 
     ) -> PyResult<Self> {
         let mut all_urls = worker_urls.clone();
 
@@ -604,6 +607,7 @@ impl Router {
             oracle_config,
             enable_cache_sync,
             sync_interval_secs,
+            nexus_endpoint,
         })
     }
 

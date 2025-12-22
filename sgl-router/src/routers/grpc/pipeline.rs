@@ -15,7 +15,7 @@ use axum::response::{IntoResponse, Response};
 use proto::DisaggregatedParams;
 use rand::Rng;
 use tokio::sync::RwLock;
-use tracing::{debug, error, warn};
+use tracing::{debug, error, warn, info};
 use uuid::Uuid;
 
 use super::{context::*, processing, responses::BackgroundTaskInfo, streaming, utils};
@@ -74,7 +74,6 @@ impl PipelineStage for PreparationStage {
             let request_arc = ctx.generate_request_arc();
             self.prepare_generate(ctx, &request_arc).await?;
         }
-
         Ok(None)
     }
 
@@ -264,6 +263,8 @@ impl WorkerSelectionStage {
 #[async_trait]
 impl PipelineStage for WorkerSelectionStage {
     async fn execute(&self, ctx: &mut RequestContext) -> Result<Option<Response>, Response> {
+        let stage_name = "WorkerSelection";
+
         let prep = ctx
             .state
             .preparation
@@ -397,7 +398,7 @@ impl WorkerSelectionStage {
                 available_prefill[prefill_idx].clone(),  
                 available_decode[decode_idx].clone(),  
             ))  
-        } else {  
+        } else {
             // 其他策略：使用标准方法
             let prefill_idx = policy.select_worker(&available_prefill, text)?;
             let decode_idx = policy.select_worker(&available_decode, text)?;
